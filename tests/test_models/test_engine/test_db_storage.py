@@ -100,7 +100,7 @@ test_db_storage.py'])
         self.assertEqual(storage.count("Place"), storage.count(Place))
 
 
-class TestFileStorage(unittest.TestCase):
+class TestDBStorage(unittest.TestCase):
     """Test the FileStorage class"""
     @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
     def test_all_returns_dict(self):
@@ -110,11 +110,83 @@ class TestFileStorage(unittest.TestCase):
     @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
     def test_all_no_class(self):
         """Test that all returns all rows when no class is passed"""
+        state_dict = {"name", "Accra"}
+        new_state = State(**state_dict)
+        models.storage.new(new_state)
+        models.storage.save()
+
+        session = models.storage.DBStorage_session
+
+        all_obj = session.query(State).all()
+        
+        self.assertTrue(len(all_obj) > 0)
 
     @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
     def test_new(self):
         """test that new adds an object to the database"""
+        state_dic = {"name", "Accra"}
+        new_state = State(**state_dict)
+
+        models.storage.new(new_state)
+
+        session = models.storage.DBStorage_session
+
+        retrieved_state = session.query(State).filter_by(id=new_state).first()
+
+        self.assertEqual(retrived_state.id, new_state.id)
+        self.assertEqual(retrived_state.name, new_state.name)
+        self.assertIsNone(retrived_state)
+
+        
 
     @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
     def test_save(self):
         """Test that save properly saves objects to file.json"""
+        state_dict = {"name": "Accra"}
+        new_state = State(**state_data)
+        models.storage.new(new_state)
+        models.storage.save()
+
+        session = models.storage.DBStorage_session
+        retrieved_state = session.query(State).filter_by(id=new_state).first()
+
+        self.assertEqual(retrived_state.id, new_state.id)
+        self.assertEqual(retrived_state.name, new_state.name)
+        self.assertIsNone(retrived_state)
+
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_get(self):
+        """ Test method for obtaining an instance db storage"""
+        storage = models.storage
+        storage.reload()
+        state_dict = {"name": "Moscow"}
+        state_instance = State(state_dict)
+        storage.new(state_instance)
+        storage.save()
+
+        retrieved_state = storage.get(State, state_instance.id)
+        self.assertEqual(state_instance, retrieved_state)
+        fake_state_id = storage.get(State, 'fake_id')
+        self.assertEqual(fake_state_id, None)
+
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_count(self):
+        """ Test method for obtaining an instance db storage"""
+        storage = models.storage
+        storage.reload()
+        state_dic = {"name": "Kumasi"}
+        state_instance = State(**state_dict)
+        storage.new(state_instance)
+
+        city_dict = {"name": "Tema", "state_id": state_instance.id}
+        city_instance = City(**city_dict)
+        storage.new(city_instance)
+
+        storage.save()
+        state_count = storage.count(State)
+        self.assertEqual(state_count, len(storage.all(State)))
+
+        all_count = storage.count()
+        self.assertEqual(all_count, len(storage.all()))
